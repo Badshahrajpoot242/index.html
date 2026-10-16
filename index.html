@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tilawat Video Maker</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Nastaliq+Urdu&family=Noto+Sans+Bengali&family=Noto+Sans+Devanagari&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d1f1a;--panel:#14302a;--text:#f3efe2;--muted:#9fb8ae;--gold:#e6b85c;--line:#2a4d43;--ink:#2a1c00}
+*{box-sizing:border-box}
+body{margin:0;padding:14px;background:var(--bg);color:var(--text);font:16px/1.5 "Trebuchet MS","Segoe UI",system-ui,sans-serif;max-width:900px;margin:0 auto}
+h1{font-family:Amiri,serif;font-size:1.8rem;margin:6px 0 2px;color:var(--gold)}
+.sub{margin:0 0 14px;color:var(--muted)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+.card h2{font-size:1rem;margin:0 0 8px;color:var(--gold)}
+canvas{width:100%;max-height:62vh;object-fit:contain;background:#000;border-radius:8px;display:block}
+audio{width:100%;margin-top:8px}
+label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:2px}
+input,select,button{font:inherit}
+input[type=number],select,input[type=text]{width:100%;background:#0d1f1a;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:8px}
+.f{display:block;border:2px dashed var(--line);border-radius:8px;padding:14px;text-align:center;cursor:pointer}
+.f input{display:none}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}
+button{background:var(--gold);color:var(--ink);border:0;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer;margin:8px 8px 0 0}
+button.alt{background:transparent;color:var(--text);border:1px solid var(--line)}
+button:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.seg{display:grid;grid-template-columns:80px 1fr;gap:8px;align-items:center;margin-bottom:6px}
+.seg span{font-family:Amiri,serif;font-size:1.1rem;direction:rtl;text-align:right;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:10px;display:none}
+.bar i{display:block;height:100%;width:0;background:var(--gold)}
+#msg{color:var(--muted);font-size:.9rem;margin-top:8px;min-height:1.4em}
+.chk{display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--text);font-size:.95rem}
+</style>
+</head>
+<body>
+<h1>تلاوت ویڈیو</h1>
+<p class="sub">Image + tilawat audio se caption wali video. Sab kuch tumhare device par banta hai.</p>
+
+<div class="card">
+  <canvas id="c" width="1280" height="720"></canvas>
+  <audio id="m" controls></audio>
+</div>
+
+<div class="card">
+  <h2>1. Image aur audio</h2>
+  <div class="g">
+    <label class="f"><input type="file" id="imgF" accept="image/*"><span id="imgL">Background image</span></label>
+    <label class="f"><input type="file" id="audF" accept="audio/*,video/*"><span id="audL">Audio ya video (tilawat)</span></label>
+  </div>
+  <div class="g" style="margin-top:10px">
+    <div><label for="dim">Image par andhera</label><input type="range" id="dim" min="0" max="0.9" step="0.05" value="0.5" style="width:100%"></div>
+    <div><label for="asp">Video ka size</label>
+      <select id="asp"><option value="1280x720">Lamba 16:9</option><option value="720x1280">Khada 9:16 (Reels/Shorts)</option><option value="960x960">Chaukor 1:1</option></select></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>2. Surah aur tarjuma</h2>
+  <div class="g3">
+    <div><label for="sur">Surah</label><select id="sur"></select></div>
+    <div><label for="from">Ayat se</label><input type="number" id="from" min="1" value="1"></div>
+    <div><label for="to">Ayat tak</label><input type="number" id="to" min="1" value="7"></div>
+  </div>
+  <div class="g" style="margin-top:10px">
+    <div><label for="lang">Neeche tarjuma</label>
+      <select id="lang"><option value="ur">Urdu</option><option value="en">English</option><option value="hi">Hindi</option><option value="bn">Bangla</option><option value="none">Koi nahi</option></select></div>
+    <div class="chk"><input type="checkbox" id="bis"><label for="bis" style="margin:0;color:var(--text)">Tilawat me Bismillah shamil hai</label></div>
+  </div>
+  <button id="load">Ayaat lao</button>
+  <div id="msg"></div>
+</div>
+
+<div class="card">
+  <h2>3. Waqt ka mel (sync)</h2>
+  <button id="auto" disabled>Awaaz sun kar khud lagao</button>
+  <button class="alt" id="tap" disabled>Tap sync shuru</button>
+  <button class="alt" id="next" disabled>Agli ayat shuru hui</button>
+  <div style="margin:10px 0;color:var(--muted);font-size:.9rem">Khud lagane me tilawat ki khamoshi (ayaat ke beech ruk kar parhna) se hadein milti hain. Galat lage to neeche waqt (second) badlo, ya Tap sync se khud tap karo.</div>
+  <div id="segs"></div>
+</div>
+
+<div class="card">
+  <h2>4. Video banao</h2>
+  <button id="exp" disabled>Video banao aur download karo</button>
+  <div class="bar" id="bar"><i id="barI"></i></div>
+</div>
+
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)};
+var c=$('c'),ctx=c.getContext('2d'),m=$('m'),img=null,file=null,segs=[],tapIdx=-1,recording=false;
+var NAMES="Al-Fatihah,Al-Baqarah,Aal-Imran,An-Nisa,Al-Maidah,Al-Anam,Al-Araf,Al-Anfal,At-Tawbah,Yunus,Hud,Yusuf,Ar-Rad,Ibrahim,Al-Hijr,An-Nahl,Al-Isra,Al-Kahf,Maryam,Ta-Ha,Al-Anbiya,Al-Hajj,Al-Muminun,An-Nur,Al-Furqan,Ash-Shuara,An-Naml,Al-Qasas,Al-Ankabut,Ar-Rum,Luqman,As-Sajdah,Al-Ahzab,Saba,Fatir,Ya-Sin,As-Saffat,Sad,Az-Zumar,Ghafir,Fussilat,Ash-Shura,Az-Zukhruf,Ad-Dukhan,Al-Jathiyah,Al-Ahqaf,Muhammad,Al-Fath,Al-Hujurat,Qaf,Adh-Dhariyat,At-Tur,An-Najm,Al-Qamar,Ar-Rahman,Al-Waqiah,Al-Hadid,Al-Mujadila,Al-Hashr,Al-Mumtahanah,As-Saff,Al-Jumuah,Al-Munafiqun,At-Taghabun,At-Talaq,At-Tahrim,Al-Mulk,Al-Qalam,Al-Haqqah,Al-Maarij,Nuh,Al-Jinn,Al-Muzzammil,Al-Muddaththir,Al-Qiyamah,Al-Insan,Al-Mursalat,An-Naba,An-Naziat,Abasa,At-Takwir,Al-Infitar,Al-Mutaffifin,Al-Inshiqaq,Al-Buruj,At-Tariq,Al-Ala,Al-Ghashiyah,Al-Fajr,Al-Balad,Ash-Shams,Al-Layl,Ad-Duha,Ash-Sharh,At-Tin,Al-Alaq,Al-Qadr,Al-Bayyinah,Az-Zalzalah,Al-Adiyat,Al-Qariah,At-Takathur,Al-Asr,Al-Humazah,Al-Fil,Quraysh,Al-Maun,Al-Kawthar,Al-Kafirun,An-Nasr,Al-Masad,Al-Ikhlas,Al-Falaq,An-Nas".split(',');
+NAMES.forEach(function(n,i){var o=document.createElement('option');o.value=i+1;o.textContent=(i+1)+'. '+n;$('sur').appendChild(o)});
+$('sur').value=1;
+
+function msg(t){$('msg').textContent=t}
+function hexA(h,a){var n=parseInt(h.slice(1),16);return 'rgba('+(n>>16)+','+((n>>8)&255)+','+(n&255)+','+a+')'}
+
+$('imgF').onchange=function(e){var f=e.target.files[0];if(!f)return;var i=new Image();i.onload=function(){img=i;$('imgL').textContent=f.name};i.src=URL.createObjectURL(f)};
+$('audF').onchange=function(e){var f=e.target.files[0];if(!f)return;file=f;m.src=URL.createObjectURL(f);$('audL').textContent=f.name;upd()};
+$('asp').onchange=function(){var s=$('asp').value.split('x');c.width=+s[0];c.height=+s[1]};
+
+function upd(){var ok=segs.length>0&&file;$('auto').disabled=!ok;$('tap').disabled=!ok;$('exp').disabled=!ok}
+
+/* ---- load ayaat ---- */
+function fetchSurah(n){
+  return fetch('https://api.alquran.cloud/v1/surah/'+n+'/editions/quran-uthmani,en.sahih,ur.jalandhry,hi.hindi,bn.bengali')
+   .then(function(r){if(!r.ok)throw new Error('net');return r.json()})
+   .then(function(j){var o={};j.data.forEach(function(e){
+      var k=e.edition.identifier.split('.')[0]==='quran-uthmani'?'ar':e.edition.language;
+      o[k]=e.ayahs});return o});
+}
+$('load').onclick=function(){
+  var n=+$('sur').value,a=+$('from').value,b=+$('to').value;
+  if(!(a>=1&&b>=a)){msg('Ayat ka silsila theek likho.');return}
+  msg('Ayaat aa rahi hain... (internet chahiye)');
+  var jobs=[fetchSurah(n)];
+  if($('bis').checked&&n!==1)jobs.push(fetchSurah(1));
+  Promise.all(jobs).then(function(r){
+    var d=r[0],out=[],langs=['en','ur','hi','bn'];
+    if(r[1]){var s={ar:r[1].ar[0].text.trim(),tr:{}};langs.forEach(function(l){s.tr[l]=r[1][l][0].text.trim()});out.push(s)}
+    d.ar.forEach(function(x,i){
+      var num=x.numberInSurah;if(num<a||num>b)return;
+      var ar=x.text.trim();
+      if(n!==1&&num===1)ar=ar.split(/\s+/).slice(4).join(' ');
+      var t={};langs.forEach(function(l){t[l]=d[l][i].text.trim()});
+      out.push({ar:ar,tr:t,num:num});
+    });
+    if(!out.length){msg('Is range me ayaat nahi mili. Ayat ka number check karo.');return}
+    segs=out;guess();render();upd();msg(out.length+' ayaat aa gayin. Ab audio ke hisaab se waqt lagao.');
+  }).catch(function(){msg('Ayaat nahi aa saki. Internet check karo aur dobara dabao.')});
+};
+
+/* ---- timing ---- */
+function guess(){
+  var dur=m.duration||segs.length*8,tot=0,w=segs.map(function(s){return s.ar.length});w.forEach(function(x){tot+=x});
+  var t=0;segs.forEach(function(s,i){s.start=+t.toFixed(1);t+=dur*w[i]/tot});
+}
+$('auto').onclick=function(){
+  msg('Audio sun raha hoon...');
+  file.arrayBuffer().then(function(buf){
+    var ac=new (window.AudioContext||window.webkitAudioContext)();
+    return ac.decodeAudioData(buf);
+  }).then(function(ab){
+    var d=ab.getChannelData(0),fr=Math.floor(ab.sampleRate*0.02),rms=[],i,j,s;
+    for(i=0;i+fr<=d.length;i+=fr){s=0;for(j=0;j<fr;j+=4)s+=d[i+j]*d[i+j];rms.push(Math.sqrt(s/(fr/4)))}
+    var sorted=rms.slice().sort(function(a,b){return a-b}),th=sorted[Math.floor(sorted.length*0.95)]*0.08;
+    var runs=[],st=-1;
+    rms.forEach(function(r,k){if(r<th){if(st<0)st=k}else if(st>=0){runs.push([st,k]);st=-1}});
+    var lead=(runs[0]&&runs[0][0]===0)?runs[0][1]:0;
+    var inner=runs.filter(function(r){return r[0]>lead&&r[1]<rms.length-1&&r[1]-r[0]>=10});
+    var need=segs.length-1;
+    if(inner.length<need){guess();render();msg('Itni khamoshiyan nahi mili ('+inner.length+'/'+need+'). Andaze se waqt lagaya hai, neeche theek kar lo ya Tap sync karo.');return}
+    inner.sort(function(a,b){return (b[1]-b[0])-(a[1]-a[0])});
+    var cut=inner.slice(0,need).sort(function(a,b){return a[0]-b[0]});
+    segs[0].start=Math.max(0,+(lead*0.02-0.1).toFixed(1));
+    cut.forEach(function(r,k){segs[k+1].start=Math.max(0,+(r[1]*0.02-0.1).toFixed(1))});
+    render();msg('Waqt lag gaya. Audio chala kar check karo, zaroorat ho to second badlo.');
+  }).catch(function(){msg('Is file ko parh nahi saka. Tap sync try karo.')});
+};
+$('tap').onclick=function(){m.currentTime=0;m.play();tapIdx=0;$('next').disabled=false;msg('Audio chal rahi hai. Har ayat shuru hote hi "Agli ayat shuru hui" dabao.')};
+$('next').onclick=function(){
+  if(tapIdx<0||tapIdx>=segs.length)return;
+  segs[tapIdx].start=+m.currentTime.toFixed(1);tapIdx++;render();
+  if(tapIdx>=segs.length){$('next').disabled=true;tapIdx=-1;msg('Sab ayaat ka waqt lag gaya.')}
+};
+function render(){
+  var box=$('segs');box.innerHTML='';
+  segs.forEach(function(s,i){
+    var d=document.createElement('div');d.className='seg';
+    var inp=document.createElement('input');inp.type='number';inp.step='0.1';inp.min='0';inp.value=s.start;
+    inp.setAttribute('aria-label','Ayat '+(i+1)+' ka start (second)');
+    inp.oninput=function(){s.start=parseFloat(inp.value)||0};
+    var sp=document.createElement('span');sp.textContent=s.ar;sp.title='Yahan se suno';
+    sp.onclick=function(){m.currentTime=s.start;m.play()};
+    d.appendChild(inp);d.appendChild(sp);box.appendChild(d);
+  });
+}
+
+/* ---- drawing ---- */
+var FONTS={
+  ur:{f:'"Noto Nastaliq Urdu","Jameel Noor Nastaleeq","Noto Naskh Arabic",serif',rtl:true,lh:2.1},
+  en:{f:'Georgia,"Times New Roman",serif',rtl:false,lh:1.45},
+  hi:{f:'"Noto Sans Devanagari","Mangal",sans-serif',rtl:false,lh:1.6},
+  bn:{f:'"Noto Sans Bengali","Nirmala UI","Vrinda",sans-serif',rtl:false,lh:1.6}
+};
+function wrap(t,maxW){var w=t.split(/\s+/),L=[],l='';w.forEach(function(x){var y=l?l+' '+x:x;if(ctx.measureText(y).width>maxW&&l){L.push(l);l=x}else l=y});if(l)L.push(l);return L}
+function fit(t,fam,wt,rtl,maxW,maxH,start,lh){
+  ctx.direction=rtl?'rtl':'ltr';
+  for(var s=start;s>=14;s-=2){ctx.font=wt+' '+s+'px '+fam;var L=wrap(t,maxW);if(L.length*s*lh<=maxH)return{L:L,s:s,lh:lh}}
+  ctx.font=wt+' 14px '+fam;return{L:wrap(t,maxW),s:14,lh:lh};
+}
+function cur(){var t=m.currentTime,k=0;segs.forEach(function(s,i){if(s.start<=t)k=i});return k}
+function block(b,y){
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  b.L.forEach(function(l,i){ctx.fillText(l,c.width/2,y+(i+0.5)*b.s*b.lh)});
+}
+function draw(){
+  var W=c.width,H=c.height;
+  ctx.fillStyle='#0d1f1a';ctx.fillRect(0,0,W,H);
+  if(img){var r=Math.max(W/img.width,H/img.height),w=img.width*r,h=img.height*r;ctx.drawImage(img,(W-w)/2,(H-h)/2,w,h)}
+  ctx.fillStyle='rgba(0,0,0,'+$('dim').value+')';ctx.fillRect(0,0,W,H);
+  if(segs.length){
+    var s=segs[cur()],lang=$('lang').value,tr=lang!=='none'?s.tr[lang]:'',pad=W*0.07,aw=W-pad*2,area=H*0.84;
+    var ar=fit(s.ar,'Amiri,"Traditional Arabic","Noto Naskh Arabic",serif','bold',true,aw,tr?area*0.58:area,H*(W>H?0.1:0.07),1.75);
+    var tb=null;
+    if(tr){var F=FONTS[lang];tb=fit(tr,F.f,'normal',F.rtl,aw,area*0.36,H*(W>H?0.05:0.035),F.lh)}
+    var ah=ar.L.length*ar.s*ar.lh,th=tb?tb.L.length*tb.s*tb.lh:0,gap=tb?H*0.04:0,y=(H-(ah+gap+th))/2;
+    ctx.shadowColor='rgba(0,0,0,.7)';ctx.shadowBlur=H*0.01;
+    ctx.fillStyle='#fff8e7';ctx.direction='rtl';ctx.font='bold '+ar.s+'px Amiri,"Traditional Arabic","Noto Naskh Arabic",serif';block(ar,y);
+    if(tb){var F2=FONTS[lang];ctx.fillStyle='#f2c46d';ctx.direction=F2.rtl?'rtl':'ltr';ctx.font=tb.s+'px '+F2.f;block(tb,y+ah+gap)}
+    ctx.shadowBlur=0;
+  }
+  requestAnimationFrame(draw);
+}
+['Amiri','Noto Nastaliq Urdu','Noto Sans Bengali','Noto Sans Devanagari'].forEach(function(f){if(document.fonts)document.fonts.load('30px "'+f+'"').catch(function(){})});
+draw();
+
+/* ---- export ---- */
+$('exp').onclick=function(){
+  if(!window.MediaRecorder||!m.captureStream){msg('Is browser me video banana nahi chalta. Computer par Chrome ya Edge use karo.');return}
+  var stream=c.captureStream(30);
+  m.captureStream().getAudioTracks().forEach(function(t){stream.addTrack(t)});
+  var mime=['video/mp4;codecs=avc1','video/webm;codecs=vp9,opus','video/webm'].find(function(x){return MediaRecorder.isTypeSupported(x)});
+  var rec=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:6000000}:{}),ch=[];
+  rec.ondataavailable=function(e){if(e.data.size)ch.push(e.data)};
+  rec.onstop=function(){
+    $('bar').style.display='none';$('exp').disabled=false;recording=false;
+    var ext=(rec.mimeType||'').indexOf('mp4')>-1?'mp4':'webm',a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob(ch,{type:rec.mimeType||'video/webm'}));a.download='tilawat.'+ext;
+    document.body.appendChild(a);a.click();a.remove();msg('Video tayyar hai, download ho rahi hai.');
+  };
+  $('exp').disabled=true;$('bar').style.display='block';recording=true;
+  msg('Audio chal kar record ho rahi hai. Poori hone tak tab band mat karo.');
+  m.pause();m.currentTime=0;
+  m.onseeked=function(){
+    m.onseeked=null;rec.start();m.play();
+    (function p(){if(!recording)return;$('barI').style.width=(m.currentTime/m.duration*100)+'%';requestAnimationFrame(p)})();
+  };
+  m.onended=function(){m.onended=null;setTimeout(function(){if(rec.state!=='inactive')rec.stop()},400)};
+};
+})();
+</script>
+</body>
+</html>
